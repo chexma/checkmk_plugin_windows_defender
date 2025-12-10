@@ -169,6 +169,26 @@ def _parse_bool(value: str) -> bool | None:
     return None
 
 
+def _extract_levels(levels: Any) -> tuple[float, float] | None:
+    """Extract (warn, crit) tuple from ruleset level format.
+
+    Ruleset SimpleLevels format: ("fixed", (warn, crit)) or ("no_levels", None)
+    check_levels() expects: (warn, crit) or None
+    """
+    if levels is None:
+        return None
+    if isinstance(levels, tuple) and len(levels) == 2:
+        level_type, level_values = levels
+        if level_type == "fixed" and isinstance(level_values, tuple):
+            return level_values
+        if level_type == "no_levels":
+            return None
+    # Fallback: assume it's already (warn, crit) format
+    if isinstance(levels, tuple) and len(levels) == 2 and all(isinstance(x, (int, float)) for x in levels):
+        return levels
+    return None
+
+
 def parse_windows_defender(string_table: StringTable) -> WindowsDefenderSection | None:
     """Parse the Windows Defender agent output into a typed dataclass."""
     if not string_table:
@@ -266,7 +286,7 @@ def _check_signature_ages(
 
         yield from check_levels(
             age,
-            levels_upper=levels,
+            levels_upper=_extract_levels(levels),
             metric_name=metric_name,
             label=f"{label} age",
             render_func=render.timespan,
@@ -343,13 +363,12 @@ def _check_scan_ages(
 
         age = _parse_timestamp(timestamp_str, now, date_format) if timestamp_str else None
 
+        extracted_levels = _extract_levels(levels)
+
         if age is None:
             # Scan has never been executed - extract thresholds for message
-            if isinstance(levels, tuple) and len(levels) == 2:
-                if levels[0] == "fixed":
-                    warn, crit = levels[1]
-                else:
-                    warn, crit = levels[1] if isinstance(levels[1], tuple) else (None, None)
+            if extracted_levels:
+                warn, crit = extracted_levels
             else:
                 warn, crit = (7 * 86400, 14 * 86400)
 
@@ -364,7 +383,7 @@ def _check_scan_ages(
 
         yield from check_levels(
             age,
-            levels_upper=levels,
+            levels_upper=extracted_levels,
             metric_name=metric_name,
             label=f"Last {label}",
             render_func=render.timespan,
