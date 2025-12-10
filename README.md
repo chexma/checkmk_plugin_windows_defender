@@ -201,7 +201,7 @@ GNU General Public License v2 (GPLv2)
 
 ## Author
 
-Andre Eckstein (Andre.Eckstein@Bechtle.com)
+Andre Eckstein
 
 ## Links
 
