@@ -1,0 +1,65 @@
+title: Windows Defender: Signature Age and Service State
+agents: windows
+catalog: app/antivirus
+license: GPLv2
+distribution: check_mk
+description:
+ This check monitors the status of Windows Defender on Windows hosts.
+ It tracks signature ages, service states, and scan execution times.
+
+ The check monitors the following aspects:
+
+ Signature Ages (always checked):
+
+ - AntiSpyware signature age
+ - AntiVirus signature age
+ - NIS (Network Inspection System) signature age
+
+ Each signature age can be configured with warning and critical thresholds.
+ Default thresholds vary by signature type (2-5 days warning, 7 days critical).
+
+ Service States (configurable):
+
+ - AM Service
+ - Behavior Monitor
+ - Antispyware
+ - Antivirus
+ - NIS
+ - Real-Time Protection
+ - OnAccess Protection
+
+ Each service can be configured to expect either {enabled} or {disabled} state.
+ A warning is raised when the actual state differs from the expected state.
+
+ Scan Ages (optional):
+
+ - Full Scan age (time since last full system scan)
+ - Quick Scan age (time since last quick scan)
+
+ Scan age monitoring is optional and only checked when configured.
+ If a scan has never been executed, the check returns {CRIT}.
+
+ The check also displays version information in the service details:
+
+ - AM Engine Version
+ - AM Product Version
+ - Signature Versions
+ - Running Mode
+ - Tamper Protection status
+
+ Date Format Configuration:
+
+ Windows hosts may output dates in different formats depending on locale settings.
+ The check supports European (DD.MM.YYYY), US (MM/DD/YYYY), and ISO (YYYY-MM-DD) formats.
+ European format is the default.
+
+ This check requires the Windows Defender agent plugin (windows_defender.ps1)
+ to be deployed on monitored hosts. The plugin can be deployed via the
+ Agent Bakery (Enterprise Edition) or manually copied to the agent plugins directory.
+
+item:
+ None (single service per host)
+
+discovery:
+ One service is created for each Windows host where the Windows Defender
+ agent section is present.

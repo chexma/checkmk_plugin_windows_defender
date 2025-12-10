@@ -7,11 +7,10 @@
 # Original author: Andre Eckstein, Andre.Eckstein@Bechtle.com
 
 from cmk.graphing.v1 import Title
+from cmk.graphing.v1.graphs import Graph, MinimalRange
 from cmk.graphing.v1.metrics import (
     Color,
-    DecimalNotation,
     Metric,
-    StrictPrecision,
     TimeNotation,
     Unit,
 )
@@ -63,4 +62,27 @@ perfometer_antivirus_sig_age = Perfometer(
     name="antivirus_sig_age",
     focus_range=FocusRange(Closed(0), Open(7 * 86400)),  # 0 to 7 days
     segments=["antivirus_sig_age"],
+)
+
+# Graph for signature ages (combined view)
+graph_signature_ages = Graph(
+    name="windows_defender_signature_ages",
+    title=Title("Windows Defender Signature Ages"),
+    minimal_range=MinimalRange(0, 7 * 86400),  # 0 to 7 days
+    simple_lines=[
+        "antispyware_sig_age",
+        "antivirus_sig_age",
+        "nis_sig_age",
+    ],
+)
+
+# Graph for scan ages (combined view)
+graph_scan_ages = Graph(
+    name="windows_defender_scan_ages",
+    title=Title("Windows Defender Scan Ages"),
+    minimal_range=MinimalRange(0, 14 * 86400),  # 0 to 14 days
+    simple_lines=[
+        "full_scan_age",
+        "quick_scan_age",
+    ],
 )

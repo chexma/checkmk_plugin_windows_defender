@@ -35,7 +35,7 @@ BehaviorMonitorEnabled          : True
 
 import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal, TypedDict
 
 from cmk.agent_based.v2 import (
     AgentSection,
@@ -50,6 +50,32 @@ from cmk.agent_based.v2 import (
     State,
     StringTable,
 )
+
+
+# Type definitions for check parameters
+LevelsType = tuple[Literal["fixed"], tuple[float, float]] | tuple[Literal["no_levels"], None] | None
+ServiceStateType = Literal["enabled", "disabled"]
+
+
+class WindowsDefenderParams(TypedDict, total=False):
+    """Type-safe check parameters for Windows Defender."""
+
+    date_format: Literal["eu", "us", "iso"]
+    # Signature age levels
+    AntispywareSignatureLastUpdated: LevelsType
+    AntivirusSignatureLastUpdated: LevelsType
+    NISSignatureLastUpdated: LevelsType
+    # Scan age levels
+    FullScanEndTime: LevelsType
+    QuickScanEndTime: LevelsType
+    # Service states
+    AMServiceEnabled: ServiceStateType
+    BehaviorMonitorEnabled: ServiceStateType
+    AntispywareEnabled: ServiceStateType
+    AntivirusEnabled: ServiceStateType
+    NISEnabled: ServiceStateType
+    RealTimeProtectionEnabled: ServiceStateType
+    OnAccessProtectionEnabled: ServiceStateType
 
 
 @dataclass(frozen=True)
@@ -169,11 +195,11 @@ def _parse_bool(value: str) -> bool | None:
     return None
 
 
-def _extract_levels(levels: Any) -> tuple[float, float] | None:
-    """Extract (warn, crit) tuple from ruleset level format.
+def _extract_levels_tuple(levels: Any) -> tuple[float, float] | None:
+    """Extract (warn, crit) tuple from ruleset level format for display purposes.
 
     Ruleset SimpleLevels format: ("fixed", (warn, crit)) or ("no_levels", None)
-    check_levels() expects: (warn, crit) or None
+    Returns just the (warn, crit) tuple for display in messages.
     """
     if levels is None:
         return None
@@ -183,9 +209,6 @@ def _extract_levels(levels: Any) -> tuple[float, float] | None:
             return level_values
         if level_type == "no_levels":
             return None
-    # Fallback: assume it's already (warn, crit) format
-    if isinstance(levels, tuple) and len(levels) == 2 and all(isinstance(x, (int, float)) for x in levels):
-        return levels
     return None
 
 
@@ -204,8 +227,6 @@ def parse_windows_defender(string_table: StringTable) -> WindowsDefenderSection 
 
     if not raw:
         return None
-
-    now = time.time()
 
     return WindowsDefenderSection(
         # Version information
@@ -245,7 +266,7 @@ def discover_windows_defender(section: WindowsDefenderSection) -> DiscoveryResul
 
 
 def _check_signature_ages(
-    params: dict[str, Any], section: WindowsDefenderSection, now: float
+    params: WindowsDefenderParams, section: WindowsDefenderSection, now: float
 ) -> CheckResult:
     """Check signature ages using check_levels for proper integration."""
 
@@ -286,7 +307,7 @@ def _check_signature_ages(
 
         yield from check_levels(
             age,
-            levels_upper=_extract_levels(levels),
+            levels_upper=levels,
             metric_name=metric_name,
             label=f"{label} age",
             render_func=render.timespan,
@@ -294,7 +315,7 @@ def _check_signature_ages(
 
 
 def _check_service_states(
-    params: dict[str, Any], section: WindowsDefenderSection
+    params: WindowsDefenderParams, section: WindowsDefenderSection
 ) -> CheckResult:
     """Check service states against expected values."""
 
@@ -343,7 +364,7 @@ def _check_service_states(
 
 
 def _check_scan_ages(
-    params: dict[str, Any], section: WindowsDefenderSection, now: float
+    params: WindowsDefenderParams, section: WindowsDefenderSection, now: float
 ) -> CheckResult:
     """Check scan ages if configured."""
 
@@ -363,12 +384,11 @@ def _check_scan_ages(
 
         age = _parse_timestamp(timestamp_str, now, date_format) if timestamp_str else None
 
-        extracted_levels = _extract_levels(levels)
-
         if age is None:
             # Scan has never been executed - extract thresholds for message
-            if extracted_levels:
-                warn, crit = extracted_levels
+            levels_tuple = _extract_levels_tuple(levels)
+            if levels_tuple:
+                warn, crit = levels_tuple
             else:
                 warn, crit = (7 * 86400, 14 * 86400)
 
@@ -383,7 +403,7 @@ def _check_scan_ages(
 
         yield from check_levels(
             age,
-            levels_upper=extracted_levels,
+            levels_upper=levels,
             metric_name=metric_name,
             label=f"Last {label}",
             render_func=render.timespan,
@@ -422,7 +442,7 @@ def _yield_version_info(section: WindowsDefenderSection) -> CheckResult:
 
 
 def check_windows_defender(
-    params: dict[str, Any], section: WindowsDefenderSection
+    params: WindowsDefenderParams, section: WindowsDefenderSection
 ) -> CheckResult:
     """Check Windows Defender status."""
 
