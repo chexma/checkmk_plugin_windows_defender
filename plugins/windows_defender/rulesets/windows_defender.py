@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Windows Defender Ruleset for CheckMK 2.4
+# Windows Defender Ruleset for CheckMK 2.5
 # Migrated to Rulesets API V1
 #
 # Original author: Andre Eckstein, Andre.Eckstein@Bechtle.com

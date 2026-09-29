@@ -1,4 +1,4 @@
-# Windows Defender Plugin for Checkmk 2.4
+# Windows Defender Plugin for Checkmk 2.5
 
 A comprehensive Checkmk plugin for monitoring Windows Defender status, signature ages, scan ages, and service states on Windows hosts.
 
@@ -10,12 +10,12 @@ A comprehensive Checkmk plugin for monitoring Windows Defender status, signature
 - **Version Information**: Display AM Engine, AM Product, and signature versions in service details
 - **Graphing**: Built-in metrics and graphs for signature ages and scan ages
 - **Perfometer**: Visual indicator for antivirus signature age
-- **Agent Bakery Support**: Deploy the Windows agent plugin via the Checkmk Agent Bakery (Enterprise Edition)
+- **Agent Bakery Support**: Deploy the Windows agent plugin via the Checkmk Agent Bakery (commercial editions: Pro, Ultimate, Cloud)
 - **Configurable Date Formats**: Support for European (DD.MM.YYYY), US (MM/DD/YYYY), and ISO (YYYY-MM-DD) date formats
 
 ## Requirements
 
-- Checkmk 2.4.0p1 or later
+- Checkmk 2.5.0 or later (for Checkmk 2.4 use the 2.4.x releases of this plugin)
 - Windows hosts with Windows Defender enabled
 - Checkmk Agent for Windows installed on monitored hosts
 
@@ -25,10 +25,10 @@ A comprehensive Checkmk plugin for monitoring Windows Defender status, signature
 
 ```bash
 # Upload and install
-mkp add windows_defender-2.4.9.mkp
+mkp add windows_defender-2.5.0.mkp
 
 # Enable the package
-mkp enable windows_defender 2.4.9
+mkp enable windows_defender 2.5.0
 
 # Restart Apache for ruleset changes (if needed)
 omd restart apache
@@ -39,8 +39,8 @@ omd restart apache
 Copy the plugin files to your Checkmk site:
 
 ```bash
-# Agent plugin (Windows)
-cp agents/windows/plugins/windows_defender.ps1 \
+# Agent plugin (Windows) - for manual deployment / agent download page
+cp plugins_legacy/agents/windows/plugins/windows_defender.ps1 \
    ~/local/share/check_mk/agents/windows/plugins/
 
 # Check plugin
@@ -55,9 +55,13 @@ cp plugins/windows_defender/rulesets/*.py \
 cp plugins/windows_defender/graphing/windows_defender.py \
    ~/local/lib/python3/cmk_addons/plugins/windows_defender/graphing/
 
-# Bakery plugin (Enterprise Edition only)
-cp lib/check_mk/base/cee/plugins/bakery/windows_defender.py \
-   ~/local/lib/check_mk/base/cee/plugins/bakery/
+# Bakery plugin (commercial editions only, Bakery API v2)
+cp plugins/windows_defender/bakery/windows_defender.py \
+   ~/local/lib/python3/cmk_addons/plugins/windows_defender/bakery/
+
+# Agent plugin source used by the bakery
+cp plugins/windows_defender/agents/windows_defender.ps1 \
+   ~/local/lib/python3/cmk_addons/plugins/windows_defender/agents/
 ```
 
 ## Configuration
@@ -76,9 +80,12 @@ Configure thresholds via **Setup > Services > Service monitoring rules > Windows
 | Quick Scan Age | Time since last quick scan | 2 days / 7 days |
 | Service States | Expected state (enabled/disabled) | All enabled |
 
-### Agent Bakery (Enterprise Edition)
+### Agent Bakery (commercial editions: Pro, Ultimate, Cloud)
 
 Deploy the agent plugin via **Setup > Agents > Windows, Linux, Solaris, AIX > Agent rules > Windows Defender**
+
+> **Note:** The bakery plugin uses the Bakery API v2 (`cmk.bakery.v2_unstable`), which is marked *unstable* in Checkmk 2.5
+> and may change with Checkmk updates until it becomes stable in 3.0.0. Please re-test agent baking after updating Checkmk.
 
 ## Agent Output Format
 
@@ -167,6 +174,17 @@ cmk -vI --detect-plugins=windows_defender <hostname>
 ```
 
 ## Version History
+
+### 2.5.1
+- Fixed: scan age set to "No levels" no longer raises CRIT when a scan has never been executed
+- A scan that has never been executed no longer emits a misleading age metric of 0
+- Documentation: Bakery API v2 is unstable in 2.5, edition names updated (Pro, Ultimate, Cloud)
+
+### 2.5.0
+- Ported to Checkmk 2.5 (requires 2.5.0 or later)
+- Bakery plugin migrated from Bakery API v1 to Bakery API v2 (`cmk.bakery.v2_unstable`, unstable in 2.5)
+  in the plugin family layout (`cmk_addons/plugins/windows_defender/bakery/`, agent source in `.../agents/`)
+- Check API v2, Rulesets API v1 and Graphing API v1 are unchanged in 2.5 - no functional changes to the check
 
 ### 2.4.9
 - Code refactoring for better maintainability

@@ -37,7 +37,8 @@ description:
  - Quick Scan age (time since last quick scan)
 
  Scan age monitoring is optional and only checked when configured.
- If a scan has never been executed, the check returns {CRIT}.
+ If a scan has never been executed, the check returns {CRIT}. If the
+ levels are explicitly set to "No levels", this is only reported as {OK}.
 
  The check also displays version information in the service details:
 
@@ -55,7 +56,7 @@ description:
 
  This check requires the Windows Defender agent plugin (windows_defender.ps1)
  to be deployed on monitored hosts. The plugin can be deployed via the
- Agent Bakery (Enterprise Edition) or manually copied to the agent plugins directory.
+ Agent Bakery (commercial editions: Pro, Ultimate, Cloud) or manually copied to the agent plugins directory.
 
 item:
  None (single service per host)

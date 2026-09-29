@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Windows Defender Graphing Definitions for CheckMK 2.4
+# Windows Defender Graphing Definitions for CheckMK 2.5
 # Metrics, Graphs, and Perfometers
 #
 # Original author: Andre Eckstein, Andre.Eckstein@Bechtle.com

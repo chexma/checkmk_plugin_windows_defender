@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Windows Defender Plugin for CheckMK 2.4
+# Windows Defender Plugin for CheckMK 2.5
 # Migrated to Check API V2
 #
 # Original author: Andre Eckstein, Andre.Eckstein@Bechtle.com
@@ -43,7 +43,6 @@ from cmk.agent_based.v2 import (
     CheckResult,
     DiscoveryResult,
     check_levels,
-    Metric,
     render,
     Result,
     Service,
@@ -118,7 +117,7 @@ class WindowsDefenderSection:
 
 # Default check parameters
 WINDOWS_DEFENDER_DEFAULT_LEVELS: dict[str, Any] = {
-    # Date format: "auto", "us" (MM/DD/YYYY), "eu" (DD/MM/YYYY or DD.MM.YYYY), "iso" (YYYY-MM-DD)
+    # Date format: "us" (MM/DD/YYYY), "eu" (DD/MM/YYYY or DD.MM.YYYY), "iso" (YYYY-MM-DD)
     "date_format": "eu",  # Default to European format (German)
     # Signature ages (warn, crit) in seconds
     "AntispywareSignatureLastUpdated": ("fixed", (3 * 86400, 7 * 86400)),
@@ -385,20 +384,19 @@ def _check_scan_ages(
         age = _parse_timestamp(timestamp_str, now, date_format) if timestamp_str else None
 
         if age is None:
-            # Scan has never been executed - extract thresholds for message
+            # Scan has never been executed - no metric, since age 0 would mean "just scanned"
             levels_tuple = _extract_levels_tuple(levels)
-            if levels_tuple:
-                warn, crit = levels_tuple
-            else:
-                warn, crit = (7 * 86400, 14 * 86400)
+            if levels_tuple is None:
+                # "No levels" configured: report only, do not alert
+                yield Result(state=State.OK, summary=f"{label} has never been executed")
+                continue
 
+            warn, crit = levels_tuple
             thresholds = f"(warn/crit at {render.timespan(warn)}/{render.timespan(crit)})"
             yield Result(
                 state=State.CRIT,
                 summary=f"{label} has never been executed {thresholds}",
             )
-            # Emit metric with value 0 to indicate never run
-            yield Metric(metric_name, 0)
             continue
 
         yield from check_levels(
