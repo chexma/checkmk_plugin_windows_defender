@@ -13,20 +13,33 @@
 # even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-from collections.abc import Mapping
 from pathlib import Path
+from typing import Literal
 
-from cmk.bakery.v2_unstable import BakeryPlugin, FileGenerator, OS, Plugin, no_op_parser
+from pydantic import BaseModel
+
+from cmk.bakery.v2_unstable import BakeryPlugin, FileGenerator, OS, Plugin
 
 
-def get_windows_defender_files(conf: Mapping[str, object]) -> FileGenerator:
+class WindowsDefenderBakeryConfig(BaseModel):
+    deployment: tuple[Literal["sync"], None] | tuple[Literal["cached"], float] | tuple[Literal["do_not_deploy"], None]
+
+
+def get_windows_defender_files(conf: WindowsDefenderBakeryConfig) -> FileGenerator:
+    mode, interval = conf.deployment
+    if mode == "do_not_deploy":
+        return
     # Source path is relative to cmk_addons/plugins/windows_defender/agents/
-    yield Plugin(base_os=OS.WINDOWS, source=Path("windows_defender.ps1"))
+    yield Plugin(
+        base_os=OS.WINDOWS,
+        source=Path("windows_defender.ps1"),
+        interval=int(interval) if mode == "cached" and interval else None,
+    )
 
 
 bakery_plugin_windows_defender = BakeryPlugin(
     name="windows_defender",
-    parameter_parser=no_op_parser,
+    parameter_parser=WindowsDefenderBakeryConfig.model_validate,
     default_parameters=None,  # only deploy if an "Agent rules" rule is configured
     files_function=get_windows_defender_files,
 )

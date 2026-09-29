@@ -84,6 +84,12 @@ Configure thresholds via **Setup > Services > Service monitoring rules > Windows
 
 Deploy the agent plugin via **Setup > Agents > Windows, Linux, Solaris, AIX > Agent rules > Windows Defender**
 
+The rule offers the following deployment types:
+
+- **Deploy the plugin and run it synchronously** (default) - executed on every agent run
+- **Deploy the plugin and run it asynchronously** - executed in the configured interval (default: 1 hour)
+- **Do not deploy the plugin** - use this to exclude hosts or folders from a more general rule
+
 > **Note:** The bakery plugin uses the Bakery API v2 (`cmk.bakery.v2_unstable`), which is marked *unstable* in Checkmk 2.5
 > and may change with Checkmk updates until it becomes stable in 3.0.0. Please re-test agent baking after updating Checkmk.
 
@@ -174,6 +180,11 @@ cmk -vI --detect-plugins=windows_defender <hostname>
 ```
 
 ## Version History
+
+### 2.5.2
+- Agent Bakery rule now has a "Deployment type" option: deploy synchronously, deploy asynchronously
+  with an execution interval, or do not deploy (previously the rule had no parameters)
+- Bakery plugin validates the rule with a pydantic model instead of `no_op_parser`
 
 ### 2.5.1
 - Fixed: scan age set to "No levels" no longer raises CRIT when a scan has never been executed
